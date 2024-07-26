@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from shazamio import Shazam
+import requests
 import asyncio
 
 app = Flask(__name__)
@@ -15,13 +16,9 @@ async def search_artist(query, limit):
     artists = result.get('artists', {}).get('hits', [])
     return artists[:limit]
 
-async def recognize(file_bytes):
-    result = await shazam.recognize(file_bytes)
+async def recognize_song(file_bytes):
+    result = await shazam.recognize_song(file_bytes)
     return result
-
-@app.route('/')
-def hello_world():
-    return 'Hello from Koyeb'
 
 @app.route('/search/track', methods=['POST'])
 def search_track_route():
@@ -65,12 +62,24 @@ def search_artist_route():
 
 @app.route('/recognize-song', methods=['POST'])
 def recognize_song_route():
-    audio_data = request.files.get('audio')
-    if not audio_data:
-        return jsonify({'error': 'Audio file is required'}), 400
+    data = request.get_json()
+    audio_url = data.get('audio_url', '')
+
+    if not audio_url:
+        return jsonify({'error': 'Audio URL is required'}), 400
+
     try:
-        result = asyncio.run(recognize(audio_data))
-        return jsonify(result)
+        # تحميل الملف الصوتي من URL
+        response = requests.get(audio_url)
+        response.raise_for_status()  # تأكد من عدم وجود أخطاء في التحميل
+        audio_data = response.content
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        song_data = loop.run_until_complete(recognize_song(audio_data))
+        return jsonify(song_data)
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Error downloading audio file: {str(e)}'}), 500
     except Exception as e:
         return jsonify({'error': f'Error recognizing song: {str(e)}'}), 500
 
