@@ -66,7 +66,7 @@ def recognize_song_route():
     audio_url = data.get('audio_url', '')
 
     if not audio_url:
-        return jsonify({'error': 'Audio URL is required'}), 400
+        return jsonify({'error': 'Audio URL Is required'}), 400
 
     try:
         # تحميل الملف الصوتي من URL
