@@ -19,6 +19,10 @@ async def recognize(file_bytes):
     result = await shazam.recognize(file_bytes)
     return result
 
+@app.route('/')
+def hello_world():
+    return 'Hello from Koyeb'
+
 @app.route('/search/track', methods=['POST'])
 def search_track_route():
     data = request.get_json()
